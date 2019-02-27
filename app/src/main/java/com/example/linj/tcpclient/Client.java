@@ -97,11 +97,13 @@ public class Client {
     }
 
     public void sendMessage(final String message) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                output.print(message);
-            }
-        });
+        if (executorService != null) {
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    output.print(message);
+                }
+            });
+        }
     }
 }

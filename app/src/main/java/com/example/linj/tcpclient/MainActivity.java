@@ -1,6 +1,7 @@
 package com.example.linj.tcpclient;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -13,7 +14,7 @@ import android.widget.TextView;
  * @author JLin
  */
 public class MainActivity extends Activity {
-    private TextView textView;
+    private TextView textView, jump;
     private EditText editText;
     private Button connect, disconnect, send;
 
@@ -31,6 +32,8 @@ public class MainActivity extends Activity {
         connect = findViewById(R.id.connect);
         disconnect = findViewById(R.id.disconnect);
         send = findViewById(R.id.send);
+
+        jump = findViewById(R.id.jump);
 
         final Client client = new Client("192.168.97.116", 8080);
 
@@ -78,6 +81,10 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 client.sendMessage(editText.getText().toString());
             }
+        });
+
+        jump.setOnClickListener(v -> {
+            startActivity(new Intent(this, UdpClientActivity.class));
         });
     }
 }
