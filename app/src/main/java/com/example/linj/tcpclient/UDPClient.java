@@ -27,7 +27,7 @@ public class UDPClient {
         StringBuilder sb = new StringBuilder();
         InetAddress local = null;
         try {
-            local = InetAddress.getByName("localhost");
+            local = InetAddress.getByName("192.168.97.116");
             sb.append("已找到服务器,连接中...").append("\n");
         } catch (UnknownHostException e) {
             sb.append("未找到服务器.").append("\n");
