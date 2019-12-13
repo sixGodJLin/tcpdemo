@@ -21,6 +21,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author JLin
  * @date 2019/2/27
+ * @descripe tcp client
+ * <p>
+ * tcp客户端工具类
+ * tcpClient(): 工具类构造方法
+ * connect(): 连接到服务器
+ * disconnect(): 与服务器断开连接，释放资源
+ * read(): 读取服务器字节流数据
+ * sendMessage(): 向服务器发送数据
  */
 public class TcpClient {
     private static final String TAG = "TcpClient";
@@ -64,6 +72,12 @@ public class TcpClient {
      */
     private SocketListener socketListener;
 
+    /**
+     * Simple constructor to use when creating a tcpClient from code.
+     *
+     * @param host host name or ip address
+     * @param port the port for the host
+     */
     public TcpClient(String host, int port, SocketListener socketListener) {
         this.host = host;
         this.port = port;
@@ -79,6 +93,7 @@ public class TcpClient {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case CONNECT_OK:
+                    Log.d(TAG, "--> connect OK");
                     socketListener.connectOk();
                     read();
                     break;
@@ -92,6 +107,11 @@ public class TcpClient {
         }
     };
 
+    /**
+     * 连接到socket，message：
+     * 1、CONNECT_OK 连接成功
+     * 2、CONNECT_FAIL 连接失败
+     */
     public void connect() {
         Log.d(TAG, "--> connect: ");
         new Thread(() -> {
@@ -129,6 +149,9 @@ public class TcpClient {
     private ScheduledExecutorService readService;
     private LinkedList<String> linkedList = new LinkedList<>();
 
+    /**
+     * 读取字节流数据
+     */
     private void read() {
         if (readService == null) {
             readService = new ScheduledThreadPoolExecutor(1);
@@ -152,6 +175,10 @@ public class TcpClient {
         }, 10, 50, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 断开socket
+     * 释放资源
+     */
     public void disconnect() {
         Log.d(TAG, "--> disconnect: ");
         if (socket.isConnected()) {

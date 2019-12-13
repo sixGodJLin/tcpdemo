@@ -7,6 +7,7 @@ import java.util.LinkedList;
 /**
  * @author JLin
  * @date 2019/1/30
+ * @descripe tcpClient工具类操作监听器
  */
 public interface SocketListener {
     void connectOk();
