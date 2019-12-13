@@ -2,19 +2,16 @@ package com.example.linj.tcpclient;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Handler;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
+import android.util.Log;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.example.linj.tcpclient.callback.SocketListener;
 import com.example.linj.tcpclient.tcpclient.TcpClient;
+import com.example.linj.tcpclient.udp.UdpClientActivity;
 
 import java.util.LinkedList;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -22,12 +19,10 @@ import java.util.concurrent.TimeUnit;
  * @author JLin
  */
 public class MainActivity extends Activity {
-    private TextView textView, jump;
-    private EditText editText;
-    private Button connect, disconnect, clear, send;
+    private static final String TAG = "MainActivity";
+    private TextView textView;
 
     StringBuilder stringBuilder = new StringBuilder();
-    private LinkedList<String> strings;
 
     int count = 0;
 
@@ -37,45 +32,47 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         textView = findViewById(R.id.text);
-        editText = findViewById(R.id.edit);
-        connect = findViewById(R.id.connect);
-        disconnect = findViewById(R.id.disconnect);
-        clear = findViewById(R.id.clear);
-        send = findViewById(R.id.send);
+        Button connect = findViewById(R.id.connect);
+        Button disconnect = findViewById(R.id.disconnect);
+        Button clear = findViewById(R.id.clear);
+        Button send = findViewById(R.id.send);
 
-        jump = findViewById(R.id.jump);
+        TextView jump = findViewById(R.id.jump);
 
-        final TcpClient client = new TcpClient("192.168.97.116", 8080);
+        TcpClient client = new TcpClient("192.168.1.100", 8080, new SocketListener() {
+            @Override
+            public void connectOk() {
+                Log.d(TAG, "connectOk: ");
+            }
 
-        connect.setOnClickListener(v ->
-                client.connect(new SocketListener() {
-                    @Override
-                    public void connect() {
+            @Override
+            public void receive(String message, LinkedList<String> linkedList) {
+                Log.d(TAG, "receive: " + message);
 
-                    }
+                count++;
+                stringBuilder.append(count).append(":").append(linkedList.pollFirst()).append("\n");
+                textView.setText(stringBuilder.toString());
+                if (count % 40 == 0) {
+                    stringBuilder = new StringBuilder();
+                }
+            }
 
-                    @Override
-                    public void receive(String message, LinkedList<String> linkedList) {
-                        strings = linkedList;
+            @Override
+            public void disconnect(TcpClient tcpClient) {
+                Log.e(TAG, "disconnect: ");
+                tcpClient.disconnect();
 
-                        count++;
-                        stringBuilder.append(count).append(":").append(message).append("\n");
-                        textView.setText(stringBuilder.toString());
-                        if (count % 40 == 0) {
-                            stringBuilder = new StringBuilder();
-                        }
-                    }
+                tcpClient.connect();
+            }
 
-                    @Override
-                    public void disconnect() {
+            @Override
+            public void connectError(TcpClient tcpClient) {
+                Log.e(TAG, "connectError: ");
+                tcpClient.connect();
+            }
+        });
 
-                    }
-
-                    @Override
-                    public void connectError() {
-                        Toast.makeText(MainActivity.this, "连接失败，正在尝试重新连接", Toast.LENGTH_SHORT).show();
-                    }
-                }));
+        connect.setOnClickListener(v -> client.connect());
 
         disconnect.setOnClickListener(v -> {
             client.disconnect();
@@ -92,14 +89,11 @@ public class MainActivity extends Activity {
         });
 
         send.setOnClickListener(v -> {
-            if (executor == null) {
-                executor = new ScheduledThreadPoolExecutor(1);
-            }
-            final int[] sendCount = {0};
-            executor.scheduleAtFixedRate(() -> {
-                System.out.println("MainActivity " + "onCreate " + "----" + sendCount[0]++);
-                client.sendMessage(editText.getText().toString());
-            }, 10, 50, TimeUnit.MILLISECONDS);
+//            if (executor == null) {
+//                executor = new ScheduledThreadPoolExecutor(1);
+//            }
+//            executor.scheduleAtFixedRate(() -> client.sendMessage(""), 10, 5000, TimeUnit.MILLISECONDS);
+            client.sendMessage("");
         });
 
         jump.setOnClickListener(v -> startActivity(new Intent(this, UdpClientActivity.class)));

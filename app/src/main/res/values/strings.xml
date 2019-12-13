@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">TcpClient</string>
     <string name="send">send</string>
-    <string name="connect">connect</string>
+    <string name="connectOk">connect</string>
     <string name="disconnect">disconnect</string>
     <string name="clear">clear</string>
     <string name="receive">receive</string>

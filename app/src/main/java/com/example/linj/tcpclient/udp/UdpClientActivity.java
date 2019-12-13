@@ -1,4 +1,4 @@
-package com.example.linj.tcpclient;
+package com.example.linj.tcpclient.udp;
 
 import android.annotation.SuppressLint;
 import android.os.Handler;
@@ -9,6 +9,8 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import com.example.linj.tcpclient.R;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

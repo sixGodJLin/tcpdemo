@@ -1,6 +1,4 @@
-package com.example.linj.tcpclient;
-
-import android.util.Log;
+package com.example.linj.tcpclient.udp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -27,7 +25,7 @@ public class UDPClient {
         StringBuilder sb = new StringBuilder();
         InetAddress local = null;
         try {
-            local = InetAddress.getByName("192.168.97.116");
+            local = InetAddress.getByName("192.168.31.161");
             sb.append("已找到服务器,连接中...").append("\n");
         } catch (UnknownHostException e) {
             sb.append("未找到服务器.").append("\n");

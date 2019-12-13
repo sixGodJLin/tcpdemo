@@ -3,14 +3,18 @@ package com.example.linj.tcpclient.tcpclient;
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
-import com.example.linj.tcpclient.SocketListener;
+import com.example.linj.tcpclient.callback.SocketListener;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +23,10 @@ import java.util.concurrent.TimeUnit;
  * @date 2019/2/27
  */
 public class TcpClient {
+    private static final String TAG = "TcpClient";
+
+    private static final long TIME_OUT = 5000;
+
     /**
      * 主机地址
      */
@@ -51,9 +59,15 @@ public class TcpClient {
      */
     private int rcvLen;
 
-    public TcpClient(String host, int port) {
+    /**
+     * TcpClient 监听器
+     */
+    private SocketListener socketListener;
+
+    public TcpClient(String host, int port, SocketListener socketListener) {
         this.host = host;
         this.port = port;
+        this.socketListener = socketListener;
     }
 
     private static final int CONNECT_OK = 10001;
@@ -63,13 +77,14 @@ public class TcpClient {
     private final Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            SocketListener socketListener = (SocketListener) msg.obj;
             switch (msg.what) {
                 case CONNECT_OK:
-                    read(socketListener);
+                    socketListener.connectOk();
+                    read();
                     break;
                 case CONNECT_FAIL:
-                    socketListener.connectError();
+                    Log.e(TAG, "--> connect fail");
+                    socketListener.connectError(TcpClient.this);
                     break;
                 default:
                     break;
@@ -77,7 +92,8 @@ public class TcpClient {
         }
     };
 
-    public void connect(final SocketListener socketListener) {
+    public void connect() {
+        Log.d(TAG, "--> connect: ");
         new Thread(() -> {
             Message message = handler.obtainMessage();
 
@@ -87,42 +103,48 @@ public class TcpClient {
                 socket.setTcpNoDelay(true);
 
                 // 设置输出流的发送缓冲区大小，默认是4KB，即4096字节
-                socket.setSendBufferSize(4096);
+                socket.setSendBufferSize(1024);
                 // 设置输入流的接收缓冲区大小，默认是4KB，即4096字节
-                socket.setReceiveBufferSize(4096);
+                socket.setReceiveBufferSize(1024);
 
                 if (socket.isConnected()) {
                     output = new PrintStream(socket.getOutputStream(), true, "utf-8");
-
                     message.what = CONNECT_OK;
-                    message.obj = socketListener;
                     handler.sendMessage(message);
                 } else {
                     message.what = CONNECT_FAIL;
-                    message.obj = socketListener;
-                    handler.sendMessage(message);
+                    handler.sendMessageDelayed(message, TIME_OUT);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                message.what = CONNECT_FAIL;
+                handler.sendMessageDelayed(message, TIME_OUT);
             }
         }).start();
     }
 
-    private ScheduledThreadPoolExecutor executor;
+    /**
+     * 读取线程
+     */
+    private ScheduledExecutorService readService;
     private LinkedList<String> linkedList = new LinkedList<>();
 
-    private void read(final SocketListener socketListener) {
-        if (executor == null) {
-            executor = new ScheduledThreadPoolExecutor(1);
+    private void read() {
+        if (readService == null) {
+            readService = new ScheduledThreadPoolExecutor(1);
         }
-        executor.scheduleAtFixedRate(() -> {
+        readService.scheduleAtFixedRate(() -> {
             try {
                 is = socket.getInputStream();
                 rcvLen = is.read(buff);
                 if (rcvLen > 0) {
-                    rcvMsg = new String(buff, 0, rcvLen, "utf-8");
+                    Log.d(TAG, "read: " + Arrays.toString(buff));
+                    rcvMsg = new String(buff, 0, rcvLen, StandardCharsets.UTF_8);
                     linkedList.addFirst(rcvMsg);
                     socketListener.receive(rcvMsg, linkedList);
+                } else {
+                    Log.e(TAG, "--> disConnect");
+                    socketListener.disconnect(TcpClient.this);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -131,10 +153,13 @@ public class TcpClient {
     }
 
     public void disconnect() {
+        Log.d(TAG, "--> disconnect: ");
         if (socket.isConnected()) {
             try {
-                executor.shutdownNow();
-                executor = null;
+                if (readService != null && !readService.isShutdown()) {
+                    readService.shutdownNow();
+                    readService = null;
+                }
 
                 output.close();
                 is.close();
@@ -148,9 +173,12 @@ public class TcpClient {
     public void sendMessage(final String message) {
         new Thread(() -> {
             try {
-                output.print(message);
+//                output.print(message);
+                byte[] bytes = {-86, 102, 0, 9, -112, 53, 113, 0, 2, 48, 0, 0, 0, 0, 0, 0, 0, 0, 102, -86};
+                output.write(bytes);
                 output.flush();
             } catch (Exception e) {
+                Log.e(TAG, "sendMessage: " + e.getMessage());
                 e.printStackTrace();
             }
         }).start();

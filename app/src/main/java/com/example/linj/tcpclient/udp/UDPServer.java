@@ -1,4 +1,4 @@
-package com.example.linj.tcpclient;
+package com.example.linj.tcpclient.udp;
 
 import android.util.Log;
 
